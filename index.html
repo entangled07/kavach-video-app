@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAVACH: Video-Centric Learning </title>
+    <title>KAVACH: Video-Centric Learning (READY FOR HOSTING)</title>
     
     <!-- EMBEDDED TAILWIND CSS -->
     <style>
@@ -88,12 +88,22 @@
             box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
             transform: scale(1.03);
         }
+        
+        /* Gemini Result Styling */
+        .ai-result {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: #fff;
+            border: 1px solid #e0e7ff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body class="font-sans bg-gray-50 min-h-screen">
 
     <div id="app-container" class="max-w-7xl mx-auto p-4 sm:p-8">
-        <!-- Main Video Area and Module Navigation -->
+        <!-- Content will be injected here by JavaScript -->
     </div>
 
     <script type="module">
@@ -104,13 +114,14 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const API_KEY = ""; // Gemini API Key Placeholder
         
         let app, db, auth;
         let userId = 'Anonymous (Local)'; 
         
         // --- KAVACH Core Application Logic ---
         
-        // EMBEDDED CONTENT: RESTORED YOUTUBE PLACEHOLDER LINKS
+        // EMBEDDED CONTENT: FINAL YOUTUBE LINKS
         const EMBEDDED_KAVACH_DATA_RAW = 
 [
 {
@@ -120,10 +131,10 @@
 "sectionTitle": "Module 1",
 "videos": [
 {
-"title": "Video 1",
-"description": "This is the first video in the KAVACH series.",
+"title": "Video 1: Core Architecture Overview",
+"description": "This video explains the core offline-first strategy and components (VOLLEY, GSON).",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/L9SMgB5QNOs" } 
+{ "quality": "720p", "url": "https://www.youtube.com/embed/L9SMgB5QNOs?rel=0" } 
 ]
 }
 ]
@@ -132,10 +143,10 @@
 "sectionTitle": "Module 2",
 "videos": [
 {
-"title": "Video 2",
-"description": "This is the second video in the KAVACH series.",
+"title": "Video 2: Caching and Fallback Logic",
+"description": "This video details how the app saves data locally (caching) and ensures seamless offline function (fallback).",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/JsokzsfFFmk" }
+{ "quality": "720p", "url": "https://www.youtube.com/embed/JsokzsfFFmk?rel=0" }
 ]
 }
 ]
@@ -144,10 +155,10 @@
 "sectionTitle": "Module 3",
 "videos": [
 {
-"title": "Video 3",
-"description": "This is the third video in the KAVACH series.",
+"title": "Video 3: Structuring JSON Content",
+"description": "This video covers the data model (Topic, Module, Video) and how JSON is parsed into Kotlin objects.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/MDHElMgya4k" }
+{ "quality": "720p", "url": "https://www.youtube.com/embed/MDHElMgya4k?rel=0" }
 ]
 }
 ]
@@ -156,10 +167,10 @@
 "sectionTitle": "Module 4",
 "videos": [
 {
-"title": "Video 4",
-"description": "This is the fourth video in the KAVACH series.",
+"title": "Video 4: Implementing Expandable List",
+"description": "This video walks through the UI implementation of the collapsible list view (TopicAdapter.kt).",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/5882emtXmag" }
+{ "quality": "720p", "url": "https://www.youtube.com/embed/5882emtXmag?rel=0" }
 ]
 }
 ]
@@ -168,10 +179,10 @@
 "sectionTitle": "Module 5",
 "videos": [
 {
-"title": "Video 5",
-"description": "This is the fifth video in the KAVACH series.",
+"title": "Video 5: Embedded Player Configuration",
+"description": "This video explains setting up and optimizing the EXOPLAYER component for video streaming.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/9_rOF6GrQr8" }
+{ "quality": "720p", "url": "https://www.youtube.com/embed/9_rOF6GrQr8?rel=0" }
 ]
 }
 ]
@@ -180,10 +191,10 @@
 "sectionTitle": "Module 6",
 "videos": [
 {
-"title": "Video 6",
-"description": "This is the sixth video in the KAVACH series.",
+"title": "Video 6: Manual Stream Switching",
+"description": "This video covers implementing the dedicated button/dialog for changing video quality (720p to 360p) for bandwidth control.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/JuvA7ONSUvw" }
+{ "quality": "720p", "url": "https://www.youtube.com/embed/JuvA7ONSUvw?rel=0" }
 ]
 }
 ]
@@ -193,7 +204,7 @@
 "videos": [
 {
 "title": "Video 7: Web vs. Native Deployment",
-"description": "This is the seventh video in the KAVACH series.",
+"description": "A comparative overview of deploying the KAVACH architecture on web vs. native platforms.",
 "videoStreams": [
 { "quality": "720p", "url": "https://www.youtube.com/embed/yR7L8t_H2oQ?rel=0" }
 ]
@@ -219,6 +230,89 @@
         let currentVideoTitle = "KAVACH - Loading...";
         let currentVideoUrl = ""; 
         let currentModuleTitle = "";
+        let currentVideoDescription = ""; // New: Store description for AI use
+
+        let aiResultText = ""; // State for AI output text
+        let isAiLoading = false; // State for AI loading indicator
+
+        // --- GEMINI API UTILITY ---
+
+        // Function to call the Gemini LLM
+        async function callGemini(prompt, systemInstruction) {
+            isAiLoading = true;
+            aiResultText = "Generating response... Please wait.";
+            renderApp(); // Show loading state
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+            };
+
+            try {
+                let response;
+                let attempt = 0;
+                const maxAttempts = 3;
+                let delay = 1000;
+
+                while (attempt < maxAttempts) {
+                    response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.status !== 429) { // 429 is Too Many Requests (retry)
+                        break;
+                    }
+                    console.warn(`Rate limit hit (429). Retrying in ${delay / 1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2; // Exponential backoff
+                    attempt++;
+                }
+
+                if (!response.ok) {
+                     const errorText = await response.text();
+                     throw new Error(`API Request failed with status ${response.status}. ${errorText}`);
+                }
+
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) throw new Error("Gemini returned an empty response.");
+                return text;
+
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                return `[Error] Failed to connect to AI service: ${error.message}. Please check your connection and API key.`;
+            } finally {
+                isAiLoading = false;
+            }
+        }
+        
+        // Function to generate Q&A for the module
+        window.generateQnA = async () => {
+            const topic = currentVideoTitle;
+            const description = currentVideoDescription;
+            const prompt = `Based on this video topic: "${topic}" and description: "${description}", generate a list of 3-4 thought-provoking questions suitable for a student to reflect on after watching the video.`;
+            const systemInstruction = "You are a concise educational assistant. Format the output as a simple numbered list of questions, nothing else.";
+            
+            aiResultText = await callGemini(prompt, systemInstruction);
+            renderApp();
+        };
+
+        // Function to summarize/expand the video title
+        window.summarizeTopic = async () => {
+            const topic = currentVideoTitle;
+            const description = currentVideoDescription;
+            const prompt = `Provide a single, concise paragraph (max 4 sentences) that summarizes the topic "${topic}" and its relevance to the KAVACH app architecture.`;
+            const systemInstruction = "You are a helpful technical summarizer. Ensure the output is clean Markdown/plain text, starting immediately with the summary.";
+            
+            aiResultText = await callGemini(prompt, systemInstruction);
+            renderApp();
+        };
+
 
         // --- Utility Functions ---
         
@@ -261,6 +355,7 @@
                     <div class="video-player-and-controls">
                         ${renderVideoPlayer()}
                         ${renderVideoDetails()}
+                        ${renderAiResult()}
                         ${renderModuleNavigation(appData.sections)}
                     </div>
                 `;
@@ -324,8 +419,6 @@
 
         const renderVideoPlayer = () => {
             
-            // NOTE: Using iFrame is the standard way to embed external players (like YouTube)
-            
             const videoElement = isOffline ? `
                 <div class="absolute inset-0 flex items-center justify-center text-center text-white/50">
                     ${getIcon('CloudOff', 'w-10 h-10 mb-3')}
@@ -333,7 +426,7 @@
                 </div>
             ` : `
                 <iframe
-                    src="${currentVideoUrl}&autoplay=1"
+                    src="${currentVideoUrl}"
                     width="100%"
                     height="100%"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -384,6 +477,51 @@
                             Current stream simulated at: ${currentVideo.quality}. (Player uses external streaming service).
                         </span>
                     </div>
+
+                    <!-- NEW: Gemini AI Interaction Panel -->
+                    <div class="mt-4 pt-4 border-t border-gray-200 flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3">
+                        <button onclick="window.generateQnA()"
+                            class="flex-grow py-3 rounded-xl text-white font-semibold transition-all bg-secondary hover:bg-emerald-500 shadow-md flex items-center justify-center disabled:opacity-50"
+                            id="qna-button" disabled
+                        >
+                            ${isAiLoading ? 'Generating Questions...' : '✨ Generate Q&A Prompts'}
+                        </button>
+                        <button onclick="window.summarizeTopic()"
+                            class="flex-grow py-3 rounded-xl text-white font-semibold transition-all bg-primary hover:bg-indigo-700 shadow-md flex items-center justify-center disabled:opacity-50"
+                            id="summary-button" disabled
+                        >
+                            ${isAiLoading ? 'Summarizing...' : '✨ Summarize Topic'}
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        // --- Gemini AI Result Renderer ---
+        const renderAiResult = () => {
+            if (!aiResultText) return '';
+
+            let content = aiResultText;
+            
+            // Basic Markdown to HTML conversion for lists/bolding
+            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/(\d+\.\s.*)/g, '<li class="ml-4 list-decimal">$1</li>');
+            content = content.replace(/\s*<li>/g, '<li>').replace(/<\/li>\s*<li>/g, '</li><li>');
+            if (content.includes('<li>')) {
+                content = `<ol class="space-y-1">${content}</ol>`;
+            } else {
+                content = `<p>${content}</p>`;
+            }
+
+            return `
+                <div class="ai-result">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary mr-2"><path d="M12 2a10 10 0 0 0-7.07 17.07l2.83-2.83"/><path d="M12 2a10 10 0 0 1 7.07 17.07l-2.83-2.83"/><line x1="8" y1="16" x2="16" y2="8"/></svg>
+                        AI Insight:
+                    </h4>
+                    <div class="text-gray-700 text-sm leading-relaxed">
+                        ${isAiLoading ? '<div class="flex items-center text-primary"><svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-6.219-8.56"></path></svg> Generating response...</div>' : content}
+                    </div>
                 </div>
             `;
         };
@@ -399,7 +537,7 @@
                 const isActive = currentModuleTitle.includes(displayTitle);
 
                 return `
-                    <div onclick="window.playModule('${displayTitle}', '${video.title}', '${video.videoStreams[0].url}', '${video.videoStreams[0].quality}')"
+                    <div onclick="window.playModule('${displayTitle}', '${video.title}', '${video.videoStreams[0].url}', '${video.videoStreams[0].quality}', '${video.description}')"
                         class="module-card transition-all ${isActive ? 'active' : ''}"
                         title="${video.title}"
                     >
@@ -419,12 +557,22 @@
 
         // --- Global Actions ---
 
-        window.playModule = (moduleTitle, videoTitle, videoUrl, quality = '720p') => {
+        window.playModule = (moduleTitle, videoTitle, videoUrl, quality = '720p', description = '') => {
             currentVideoUrl = videoUrl;
             currentVideoTitle = videoTitle;
             currentModuleTitle = moduleTitle;
+            currentVideoDescription = description; // Store description
             currentVideo = { title: videoTitle, url: videoUrl, quality: quality };
+            aiResultText = ""; // Clear previous AI result when switching videos
+            
             renderApp();
+            
+            // Enable AI buttons once content is loaded (Requires https://)
+            const qnaButton = document.getElementById('qna-button');
+            const summaryButton = document.getElementById('summary-button');
+
+            if (qnaButton) qnaButton.disabled = false;
+            if (summaryButton) summaryButton.disabled = false;
         };
 
         window.setVideoQuality = (quality) => {
@@ -471,6 +619,13 @@
                 window.renderMessageBox("Cache Cleared", "Local content cache has been cleared. The app will attempt to load fresh data on the next reload.", 'warning');
                 setTimeout(() => window.location.reload(), 1500);
             });
+            
+            // Initial state for AI buttons (ensure they are disabled until a video is clicked)
+            const qnaButton = document.getElementById('qna-button');
+            const summaryButton = document.getElementById('summary-button');
+
+            if (qnaButton) qnaButton.disabled = isAiLoading;
+            if (summaryButton) summaryButton.disabled = isAiLoading;
         };
 
         // --- Data Loading and Caching Logic ---
@@ -507,7 +662,7 @@
             if (appData && appData.sections && appData.sections.length > 0 && appData.sections[0].videos.length > 0) {
                  const firstModule = appData.sections[0];
                  const firstVideo = firstModule.videos[0];
-                 window.playModule(`Module 1`, firstVideo.title, firstVideo.videoStreams[0].url, firstVideo.videoStreams[0].quality);
+                 window.playModule(`Module 1`, firstVideo.title, firstVideo.videoStreams[0].url, firstVideo.videoStreams[0].quality, firstVideo.description);
             } else {
                 renderApp(); 
             }
@@ -559,5 +714,3 @@
     </script>
 </body>
 </html>
-
-
