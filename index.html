@@ -25,7 +25,7 @@
         .flex { display: flex; }
         .flex-col { flex-direction: column; }
         .items-center { align-items: center; }
-        .justify-center { justify-center: center; }
+        .justify-center { justify-center; center; }
         .justify-between { justify-content: space-between; }
         .w-full { width: 100%; }
         .aspect-video { aspect-ratio: 16 / 9; }
@@ -89,15 +89,8 @@
             transform: scale(1.03);
         }
         
-        /* Gemini Result Styling */
-        .ai-result {
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: #fff;
-            border: 1px solid #e0e7ff;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
+        /* Cleaned AI Result Styling */
+        .ai-result { display: none; }
     </style>
 </head>
 <body class="font-sans bg-gray-50 min-h-screen">
@@ -114,13 +107,16 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        const API_KEY = ""; // Gemini API Key Placeholder
         
         let app, db, auth;
         let userId = 'Anonymous (Local)'; 
         
         // --- KAVACH Core Application Logic ---
         
+        // GDrive Image URL (FIXED TO ROBUST THUMBNAIL SOURCE)
+        const KAVACH_IMAGE_ID = '1KUsngQrr4UjB6uXFES6NVfpNS8jJdZdK';
+        const KAVACH_IMAGE_URL = `https://drive.google.com/thumbnail?id=${KAVACH_IMAGE_ID}&sz=s1000`; 
+
         // EMBEDDED CONTENT: FINAL YOUTUBE LINKS
         const EMBEDDED_KAVACH_DATA_RAW = 
 [
@@ -134,7 +130,7 @@
 "title": "Video 1: Core Architecture Overview",
 "description": "This video explains the core offline-first strategy and components (VOLLEY, GSON).",
 "videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/L9SMgB5QNOs" } // URL provided by user
+{ "quality": "720p", "url": "https://youtu.be/L9SMgB5QNOs" } 
 ]
 }
 ]
@@ -206,7 +202,7 @@
 "title": "Video 7: Web vs. Native Deployment",
 "description": "A comparative overview of deploying the KAVACH architecture on web vs. native platforms.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/yR7L8t_H2oQ" } // Placeholder, now in share format
+{ "quality": "720p", "url": "https://youtu.be/yR7L8t_H2oQ" } // Placeholder
 ]
 }
 ]
@@ -231,87 +227,7 @@
         let currentVideoUrl = ""; 
         let currentModuleTitle = "";
         let currentVideoDescription = ""; 
-        let aiResultText = ""; 
-        let isAiLoading = false; 
-
-        // --- GEMINI API UTILITY ---
-
-        async function callGemini(prompt, systemInstruction) {
-            isAiLoading = true;
-            aiResultText = "Generating response... Please wait.";
-            renderApp(); 
-
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
-            
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: systemInstruction }] },
-            };
-
-            try {
-                let response;
-                let attempt = 0;
-                const maxAttempts = 3;
-                let delay = 1000;
-
-                while (attempt < maxAttempts) {
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.status !== 429) { 
-                        break;
-                    }
-                    console.warn(`Rate limit hit (429). Retrying in ${delay / 1000}s...`);
-                    await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2; 
-                    attempt++;
-                }
-
-                if (!response.ok) {
-                     const errorText = await response.text();
-                     throw new Error(`API Request failed with status ${response.status}. ${errorText}`);
-                }
-
-                const result = await response.json();
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!text) throw new Error("Gemini returned an empty response.");
-                return text;
-
-            } catch (error) {
-                console.error("Gemini API Error:", error);
-                return `[Error] Failed to connect to AI service: ${error.message}. Please check your connection and API key.`;
-            } finally {
-                isAiLoading = false;
-            }
-        }
         
-        window.generateQnA = async () => {
-            if (isOffline) { renderMessageBox("Offline Mode", "AI features require a network connection.", 'warning'); return; }
-            const topic = currentVideoTitle;
-            const description = currentVideoDescription;
-            const prompt = `Based on this video topic: "${topic}" and description: "${description}", generate a list of 3-4 thought-provoking questions suitable for a student to reflect on after watching the video.`;
-            const systemInstruction = "You are a concise educational assistant. Format the output as a simple numbered list of questions, nothing else.";
-            
-            aiResultText = await callGemini(prompt, systemInstruction);
-            renderApp();
-        };
-
-        window.summarizeTopic = async () => {
-            if (isOffline) { renderMessageBox("Offline Mode", "AI features require a network connection.", 'warning'); return; }
-            const topic = currentVideoTitle;
-            const description = currentVideoDescription;
-            const prompt = `Provide a single, concise paragraph (max 4 sentences) that summarizes the topic "${topic}" and its relevance to the KAVACH app architecture.`;
-            const systemInstruction = "You are a helpful technical summarizer. Ensure the output is clean Markdown/plain text, starting immediately with the summary.";
-            
-            aiResultText = await callGemini(prompt, systemInstruction);
-            renderApp();
-        };
-
-
         // --- Utility Functions ---
         
         const getIcon = (name, classes) => {
@@ -346,6 +262,7 @@
             const container = document.getElementById('app-container');
             if (!container) return;
 
+            // Determine status bar colors and icons
             const statusColor = isOffline ? 'bg-red-500' : 'bg-green-500';
             const iconName = isOffline ? 'WifiOff' : 'Wifi';
             const speedText = isOffline ? 'Offline' : simulatedSpeed;
@@ -365,7 +282,6 @@
                     <div class="video-player-and-controls">
                         ${renderVideoPlayer()}
                         ${renderVideoDetails()}
-                        ${renderAiResult()}
                         ${renderModuleNavigation(appData.sections)}
                     </div>
                 `;
@@ -381,9 +297,17 @@
 
 
             let headerHtml = `
-                <header class="bg-primary text-white p-6 rounded-t-2xl shadow-xl">
-                    <h1 class="text-3xl font-bold">${topicTitle}</h1>
-                    <p class="text-indigo-200 mt-1">Zero-Maintenance, Offline-First Video Library</p>
+                <!-- Image sizing fixed via inline style -->
+                <header class="bg-primary text-white p-6 rounded-t-2xl shadow-xl flex justify-between items-center">
+                    <div>
+                        <h1 class="text-3xl font-bold">${topicTitle}</h1>
+                        <p class="text-indigo-200 mt-1">Learning Video</p>
+                    </div>
+                    <!-- FIX: Image element using larger INLINE PIXEL styles for guaranteed sizing (56px) -->
+                    <img src="${KAVACH_IMAGE_URL}" 
+                        style="height: 56px; width: 56px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);" 
+                        alt="KAVACH Logo Icon" 
+                        onerror="this.onerror=null; this.src='https://placehold.co/56x56/4F46E5/ffffff?text=K'">
                 </header>
                 
                 <!-- Enhanced Status Bar -->
@@ -407,18 +331,7 @@
                     </div>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row items-center space-y-3 sm:space-y-0 sm:space-x-4 mb-6 p-4 bg-white rounded-xl shadow-md">
-                    <span class="text-gray-700 font-medium whitespace-nowrap">User ID:</span>
-                    <span class="truncate font-mono text-xs text-gray-500 bg-gray-100 p-2 rounded">${userId}</span>
-                    <button id="toggle-network-btn" class="px-4 py-2 rounded-lg text-sm transition-all shadow-sm whitespace-nowrap
-                        ${isOffline ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-green-500 text-white hover:bg-green-600'}"
-                    >
-                        ${isOffline ? 'Force Offline (Load Cache)' : 'Network ON (Live Data)'}
-                    </button>
-                    <button id="clear-cache-btn" class="px-4 py-2 rounded-lg text-sm bg-gray-200 text-gray-700 hover:bg-gray-300 transition-all shadow-sm whitespace-nowrap">
-                        Clear Cache & Reload
-                    </button>
-                </div>
+                <!-- Technical controls block has been removed for clean UI -->
             `;
 
             container.innerHTML = headerHtml + contentHtml;
@@ -439,7 +352,7 @@
                 </div>
             ` : `
                 <iframe
-                    src="${safeUrl}&autoplay=1"
+                    src="${safeUrl}"
                     width="100%"
                     height="100%"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -490,51 +403,6 @@
                             Current stream simulated at: ${currentVideo.quality}. (Player uses external streaming service).
                         </span>
                     </div>
-
-                    <!-- Gemini AI Interaction Panel -->
-                    <div class="mt-4 pt-4 border-t border-gray-200 flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3">
-                        <button onclick="window.generateQnA()"
-                            class="flex-grow py-3 rounded-xl text-white font-semibold transition-all bg-secondary hover:bg-emerald-500 shadow-md flex items-center justify-center disabled:opacity-50"
-                            id="qna-button" ${isAiLoading || isOffline ? 'disabled' : ''}
-                        >
-                            ${isAiLoading ? 'Generating Questions...' : '✨ Generate Q&A Prompts'}
-                        </button>
-                        <button onclick="window.summarizeTopic()"
-                            class="flex-grow py-3 rounded-xl text-white font-semibold transition-all bg-primary hover:bg-indigo-700 shadow-md flex items-center justify-center disabled:opacity-50"
-                            id="summary-button" ${isAiLoading || isOffline ? 'disabled' : ''}
-                        >
-                            ${isAiLoading ? 'Summarizing...' : '✨ Summarize Topic'}
-                        </button>
-                    </div>
-                </div>
-            `;
-        };
-
-        // --- Gemini AI Result Renderer ---
-        const renderAiResult = () => {
-            if (!aiResultText) return '';
-
-            let content = aiResultText;
-            
-            // Basic Markdown to HTML conversion for lists/bolding
-            content = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            content = content.replace(/(\d+\.\s.*)/g, '<li class="ml-4 list-decimal">$1</li>');
-            content = content.replace(/\s*<li>/g, '<li>').replace(/<\/li>\s*<li>/g, '</li><li>');
-            if (content.includes('<li>')) {
-                content = `<ol class="space-y-1">${content}</ol>`;
-            } else {
-                content = `<p>${content}</p>`;
-            }
-
-            return `
-                <div class="ai-result">
-                    <h4 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-primary mr-2"><path d="M12 2a10 10 0 0 0-7.07 17.07l2.83-2.83"/><path d="M12 2a10 10 0 0 1 7.07 17.07l-2.83-2.83"/><line x1="8" y1="16" x2="16" y2="8"/></svg>
-                        AI Insight:
-                    </h4>
-                    <div class="text-gray-700 text-sm leading-relaxed">
-                        ${isAiLoading ? '<div class="flex items-center text-primary"><svg class="w-5 h-5 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-6.219-8.56"></path></svg> Generating response...</div>' : content}
-                    </div>
                 </div>
             `;
         };
@@ -574,9 +442,7 @@
             currentVideoUrl = videoUrl;
             currentVideoTitle = videoTitle;
             currentModuleTitle = moduleTitle;
-            currentVideoDescription = description; // Store description
             currentVideo = { title: videoTitle, url: videoUrl, quality: quality };
-            aiResultText = ""; // Clear previous AI result when switching videos
             
             renderApp();
         };
@@ -613,18 +479,7 @@
         };
         
         const attachEventListeners = () => {
-            document.getElementById('toggle-network-btn')?.addEventListener('click', () => {
-                isOffline = !isOffline;
-                // Simulate new speed if we go online
-                simulatedSpeed = isOffline ? 'Offline' : (Math.random() * 5 + 0.5).toFixed(1) + ' Mbps';
-                loadContentLogic(); 
-            });
-
-            document.getElementById('clear-cache-btn')?.addEventListener('click', () => {
-                localStorage.removeItem(CACHE_KEY);
-                window.renderMessageBox("Cache Cleared", "Local content cache has been cleared. The app will attempt to load fresh data on the next reload.", 'warning');
-                setTimeout(() => window.location.reload(), 1500);
-            });
+            // Event listeners removed for clean UI.
         };
 
         // --- Data Loading and Caching Logic ---
@@ -637,11 +492,12 @@
 
             let dataToLoad = null;
 
-            if (!isOffline && navigator.onLine) {
+            if (navigator.onLine) {
                 dataToLoad = EMBEDDED_KAVACH_DATA;
                 localStorage.setItem(CACHE_KEY, JSON.stringify(dataToLoad));
                 currentStatus = 'Loaded latest content'; // Shortened status
                 isOffline = false;
+                simulatedSpeed = (Math.random() * 5 + 0.5).toFixed(1) + ' Mbps';
             } else {
                 const cachedData = localStorage.getItem(CACHE_KEY);
                 if (cachedData) {
