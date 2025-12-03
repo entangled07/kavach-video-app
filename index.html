@@ -25,7 +25,7 @@
         .flex { display: flex; }
         .flex-col { flex-direction: column; }
         .items-center { align-items: center; }
-        .justify-center { justify-content: center; }
+        .justify-center { justify-center: center; }
         .justify-between { justify-content: space-between; }
         .w-full { width: 100%; }
         .aspect-video { aspect-ratio: 16 / 9; }
@@ -134,7 +134,7 @@
 "title": "Video 1: Core Architecture Overview",
 "description": "This video explains the core offline-first strategy and components (VOLLEY, GSON).",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/L9SMgB5QNOs?rel=0" } 
+{ "quality": "720p", "url": "https://youtu.be/L9SMgB5QNOs" } // URL provided by user
 ]
 }
 ]
@@ -146,7 +146,7 @@
 "title": "Video 2: Caching and Fallback Logic",
 "description": "This video details how the app saves data locally (caching) and ensures seamless offline function (fallback).",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/JsokzsfFFmk?rel=0" }
+{ "quality": "720p", "url": "https://youtu.be/JsokzsfFFmk" }
 ]
 }
 ]
@@ -158,7 +158,7 @@
 "title": "Video 3: Structuring JSON Content",
 "description": "This video covers the data model (Topic, Module, Video) and how JSON is parsed into Kotlin objects.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/MDHElMgya4k?rel=0" }
+{ "quality": "720p", "url": "https://youtu.be/MDHElMgya4k" }
 ]
 }
 ]
@@ -170,7 +170,7 @@
 "title": "Video 4: Implementing Expandable List",
 "description": "This video walks through the UI implementation of the collapsible list view (TopicAdapter.kt).",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/5882emtXmag?rel=0" }
+{ "quality": "720p", "url": "https://youtu.be/5882emtXmag" }
 ]
 }
 ]
@@ -182,7 +182,7 @@
 "title": "Video 5: Embedded Player Configuration",
 "description": "This video explains setting up and optimizing the EXOPLAYER component for video streaming.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/9_rOF6GrQr8?rel=0" }
+{ "quality": "720p", "url": "https://youtu.be/9_rOF6GrQr8" }
 ]
 }
 ]
@@ -194,7 +194,7 @@
 "title": "Video 6: Manual Stream Switching",
 "description": "This video covers implementing the dedicated button/dialog for changing video quality (720p to 360p) for bandwidth control.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/JuvA7ONSUvw?rel=0" }
+{ "quality": "720p", "url": "https://youtu.be/JuvA7ONSUvw" }
 ]
 }
 ]
@@ -206,7 +206,7 @@
 "title": "Video 7: Web vs. Native Deployment",
 "description": "A comparative overview of deploying the KAVACH architecture on web vs. native platforms.",
 "videoStreams": [
-{ "quality": "720p", "url": "https://www.youtube.com/embed/yR7L8t_H2oQ?rel=0" }
+{ "quality": "720p", "url": "https://youtu.be/yR7L8t_H2oQ" } // Placeholder, now in share format
 ]
 }
 ]
@@ -230,18 +230,16 @@
         let currentVideoTitle = "KAVACH - Loading...";
         let currentVideoUrl = ""; 
         let currentModuleTitle = "";
-        let currentVideoDescription = ""; // New: Store description for AI use
-
-        let aiResultText = ""; // State for AI output text
-        let isAiLoading = false; // State for AI loading indicator
+        let currentVideoDescription = ""; 
+        let aiResultText = ""; 
+        let isAiLoading = false; 
 
         // --- GEMINI API UTILITY ---
 
-        // Function to call the Gemini LLM
         async function callGemini(prompt, systemInstruction) {
             isAiLoading = true;
             aiResultText = "Generating response... Please wait.";
-            renderApp(); // Show loading state
+            renderApp(); 
 
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
             
@@ -263,12 +261,12 @@
                         body: JSON.stringify(payload)
                     });
 
-                    if (response.status !== 429) { // 429 is Too Many Requests (retry)
+                    if (response.status !== 429) { 
                         break;
                     }
                     console.warn(`Rate limit hit (429). Retrying in ${delay / 1000}s...`);
                     await new Promise(resolve => setTimeout(resolve, delay));
-                    delay *= 2; // Exponential backoff
+                    delay *= 2; 
                     attempt++;
                 }
 
@@ -291,8 +289,8 @@
             }
         }
         
-        // Function to generate Q&A for the module
         window.generateQnA = async () => {
+            if (isOffline) { renderMessageBox("Offline Mode", "AI features require a network connection.", 'warning'); return; }
             const topic = currentVideoTitle;
             const description = currentVideoDescription;
             const prompt = `Based on this video topic: "${topic}" and description: "${description}", generate a list of 3-4 thought-provoking questions suitable for a student to reflect on after watching the video.`;
@@ -302,8 +300,8 @@
             renderApp();
         };
 
-        // Function to summarize/expand the video title
         window.summarizeTopic = async () => {
+            if (isOffline) { renderMessageBox("Offline Mode", "AI features require a network connection.", 'warning'); return; }
             const topic = currentVideoTitle;
             const description = currentVideoDescription;
             const prompt = `Provide a single, concise paragraph (max 4 sentences) that summarizes the topic "${topic}" and its relevance to the KAVACH app architecture.`;
@@ -328,17 +326,29 @@
             return `<svg class="w-5 h-5 ${classes}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[name] || ''}</svg>`;
         };
         
+        // --- Video URL Conversion Failsafe ---
+        // Converts share URL (youtu.be/ID) to embed URL (/embed/ID)
+        const getEmbedUrl = (url) => {
+            if (url.includes('youtu.be/')) {
+                const idMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+                if (idMatch && idMatch[1]) {
+                    // Use standard YouTube embed format
+                    return `https://www.youtube.com/embed/${idMatch[1]}?rel=0`;
+                }
+            }
+            // If it's already an embed link or another service, return as is
+            return url;
+        };
+
         // --- Core UI Rendering ---
 
         const renderApp = () => {
             const container = document.getElementById('app-container');
             if (!container) return;
 
-            // Determine status bar colors and icons
             const statusColor = isOffline ? 'bg-red-500' : 'bg-green-500';
             const iconName = isOffline ? 'WifiOff' : 'Wifi';
             const speedText = isOffline ? 'Offline' : simulatedSpeed;
-            const statusTextColor = isOffline ? 'text-red-800' : 'text-green-800';
             const topicTitle = appData ? appData.topicTitle : 'KAVACH';
             
             let contentHtml = '';
@@ -419,6 +429,9 @@
 
         const renderVideoPlayer = () => {
             
+            // Failsafe: Ensure the URL is in the correct embed format before rendering
+            const safeUrl = getEmbedUrl(currentVideoUrl);
+
             const videoElement = isOffline ? `
                 <div class="absolute inset-0 flex items-center justify-center text-center text-white/50">
                     ${getIcon('CloudOff', 'w-10 h-10 mb-3')}
@@ -426,7 +439,7 @@
                 </div>
             ` : `
                 <iframe
-                    src="${currentVideoUrl}"
+                    src="${safeUrl}&autoplay=1"
                     width="100%"
                     height="100%"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -478,17 +491,17 @@
                         </span>
                     </div>
 
-                    <!-- NEW: Gemini AI Interaction Panel -->
+                    <!-- Gemini AI Interaction Panel -->
                     <div class="mt-4 pt-4 border-t border-gray-200 flex flex-col space-y-3 sm:flex-row sm:space-y-0 sm:space-x-3">
                         <button onclick="window.generateQnA()"
                             class="flex-grow py-3 rounded-xl text-white font-semibold transition-all bg-secondary hover:bg-emerald-500 shadow-md flex items-center justify-center disabled:opacity-50"
-                            id="qna-button" disabled
+                            id="qna-button" ${isAiLoading || isOffline ? 'disabled' : ''}
                         >
                             ${isAiLoading ? 'Generating Questions...' : '✨ Generate Q&A Prompts'}
                         </button>
                         <button onclick="window.summarizeTopic()"
                             class="flex-grow py-3 rounded-xl text-white font-semibold transition-all bg-primary hover:bg-indigo-700 shadow-md flex items-center justify-center disabled:opacity-50"
-                            id="summary-button" disabled
+                            id="summary-button" ${isAiLoading || isOffline ? 'disabled' : ''}
                         >
                             ${isAiLoading ? 'Summarizing...' : '✨ Summarize Topic'}
                         </button>
@@ -566,13 +579,6 @@
             aiResultText = ""; // Clear previous AI result when switching videos
             
             renderApp();
-            
-            // Enable AI buttons once content is loaded (Requires https://)
-            const qnaButton = document.getElementById('qna-button');
-            const summaryButton = document.getElementById('summary-button');
-
-            if (qnaButton) qnaButton.disabled = false;
-            if (summaryButton) summaryButton.disabled = false;
         };
 
         window.setVideoQuality = (quality) => {
@@ -619,13 +625,6 @@
                 window.renderMessageBox("Cache Cleared", "Local content cache has been cleared. The app will attempt to load fresh data on the next reload.", 'warning');
                 setTimeout(() => window.location.reload(), 1500);
             });
-            
-            // Initial state for AI buttons (ensure they are disabled until a video is clicked)
-            const qnaButton = document.getElementById('qna-button');
-            const summaryButton = document.getElementById('summary-button');
-
-            if (qnaButton) qnaButton.disabled = isAiLoading;
-            if (summaryButton) summaryButton.disabled = isAiLoading;
         };
 
         // --- Data Loading and Caching Logic ---
