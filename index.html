@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAVACH: Video-Centric Learning</title>
+    
+    <!-- EMBEDDED TAILWIND CSS -->
+    <style>
+        /* Base styles */
+        :root {
+            --primary: #4F46E5; /* Indigo-600 */
+            --secondary-bg: #e0e7ff; /* Indigo-100 */
+            --video-bg: #111827; /* Dark Grey/Black */
+        }
+        .font-sans { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+        .min-h-screen { min-height: 100vh; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .max-w-7xl { max-width: 80rem; }
+        .mx-auto { margin-left: auto; margin-right: auto; }
+        
+        /* Layout & Spacing */
+        .p-4 { padding: 1rem; }
+        .sm\:p-8 { padding: 2rem; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-center { justify-center; center; }
+        .justify-between { justify-content: space-between; }
+        .w-full { width: 100%; }
+        .aspect-video { aspect-ratio: 16 / 9; }
+
+        /* Colors and Components */
+        .bg-primary { background-color: var(--primary); }
+        .text-white { color: #fff; }
+        .p-6 { padding: 1.5rem; }
+        .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+        .rounded-lg { border-radius: 0.5rem; }
+        .rounded-t-2xl { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+        .font-bold { font-weight: 700; }
+        .text-indigo-200 { color: #c7d2fe; }
+        .mt-1 { margin-top: 0.25rem; }
+
+        /* Video Player Area */
+        .video-player-container { background-color: var(--video-bg); padding: 0.5rem; border-radius: 1rem; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .video-iframe { border-radius: 0.5rem; }
+        .video-overlay { z-index: 10; cursor: pointer; }
+        .relative { position: relative; }
+        .absolute { position: absolute; }
+        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+        .transition-all { transition: all 0.3s ease-in-out; }
+        
+        /* Module List Styling */
+        .module-list-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+        @media (min-width: 640px) { 
+            .module-list-container {
+                grid-template-columns: repeat(4, 1fr); 
+            }
+        }
+        @media (min-width: 1024px) { 
+            .module-list-container {
+                grid-template-columns: repeat(7, 1fr); 
+            }
+        }
+        
+        .module-card {
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .module-card:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .module-card.active {
+            border-color: var(--primary);
+            background-color: var(--secondary-bg);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
+            transform: scale(1.03);
+        }
+        
+        /* Cleaned AI Result Styling */
+        .ai-result { display: none; }
+    </style>
+</head>
+<body class="font-sans bg-gray-50 min-h-screen">
+
+    <div id="app-container" class="max-w-7xl mx-auto p-4 sm:p-8">
+        <!-- Content will be injected here by JavaScript -->
+    </div>
+
+    <script type="module">
+        // --- Firebase SDK Imports (For Canvas Environment only) ---
+        let initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, setLogLevel;
+
+        // --- GLOBAL FIREBASE/APP VARIABLES (Mandatory for Canvas Environment) ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        let app, db, auth;
+        let userId = 'Anonymous (Local)'; 
+        
+        // --- KAVACH Core Application Logic ---
+        
+        // GDrive Image URL (USING THE MOST RELIABLE THUMBNAIL LINK FORMAT)
+        const KAVACH_IMAGE_ID = '1KUsngQrr4UjB6uXFES6NVfpNS8jJdZdK';
+        const KAVACH_IMAGE_URL = `https://drive.google.com/thumbnail?id=${KAVACH_IMAGE_ID}&sz=s1000`; 
+
+        // EMBEDDED CONTENT: FINAL YOUTUBE LINKS
+        const EMBEDDED_KAVACH_DATA_RAW = 
+[
+{
+"topicTitle": "KAVACH",
+"sections": [
+{
+"sectionTitle": "Module 1",
+"videos": [
+{
+"title": "Video 1: Core Architecture Overview",
+"description": "This video explains the core offline-first strategy and components (VOLLEY, GSON).",
+"videoStreams": [
+{ "quality": "720p", "url": "https://youtu.be/L9SMgB5QNOs" } 
+]
+}
+]
+},
+{
+"sectionTitle": "Module 2",
+"videos": [
+{
+"title": "Video 2: Caching and Fallback Logic",
+"description": "This video details how the app saves data locally (caching) and ensures seamless offline function (fallback).",
+"videoStreams": [
+{ "quality": "720p", "url": "https://youtu.be/JsokzsfFFmk" }
+]
+}
+]
+},
+{
+"sectionTitle": "Module 3",
+"videos": [
+{
+"title": "Video 3: Structuring JSON Content",
+"description": "This video covers the data model (Topic, Module, Video) and how JSON is parsed into Kotlin objects.",
+"videoStreams": [
+{ "quality": "720p", "url": "https://youtu.be/MDHElMgya4k" }
+]
+}
+]
+},
+{
+"sectionTitle": "Module 4",
+"videos": [
+{
+"title": "Video 4: Implementing Expandable List",
+"description": "This video walks through the UI implementation of the collapsible list view (TopicAdapter.kt).",
+"videoStreams": [
+{ "quality": "720p", "url": "https://youtu.be/5882emtXmag" }
+]
+}
+]
+},
+{
+"sectionTitle": "Module 5",
+"videos": [
+{
+"title": "Video 5: Embedded Player Configuration",
+"description": "This video explains setting up and optimizing the EXOPLAYER component for video streaming.",
+"videoStreams": [
+{ "quality": "720p", "url": "https://youtu.be/9_rOF6GrQr8" }
+]
+}
+]
+},
+{
+"sectionTitle": "Module 6",
+"videos": [
+{
+"title": "Video 6: Manual Stream Switching",
+"description": "This video covers implementing the dedicated button/dialog for changing video quality (720p to 360p) for bandwidth control.",
+"videoStreams": [
+{ "quality": "720p", "url": "https://youtu.be/JuvA7ONSUvw" }
+]
+}
+]
+},
+{
+"sectionTitle": "Module 7",
+"videos": [
+{
+"title": "Video 7: Web vs. Native Deployment",
+"description": "A comparative overview of deploying the KAVACH architecture on web vs. native platforms.",
+"videoStreams": [
+{ "quality": "720p", "url": "https://youtu.be/k3CuRhH7Q-g" } // FINAL LINK
+]
+}
+]
+}
+]
+}
+];
+        
+        const EMBEDDED_KAVACH_DATA = EMBEDDED_KAVACH_DATA_RAW[0];
+
+        const CACHE_KEY = 'kavach_content_cache';
+        const MOCK_FETCH_DELAY = 100;
+        
+        let appData = null; 
+        let currentStatus = 'Initializing...';
+        let isOffline = false;
+        let isAuthReady = false;
+        
+        let currentVideo = null; 
+        let currentVideoTitle = "KAVACH - Loading...";
+        let currentVideoUrl = ""; 
+        let currentModuleTitle = "";
+        let currentVideoDescription = ""; 
+        
+        // --- Utility Functions ---
+        
+        const getIcon = (name, classes) => {
+            const icons = {
+                'Wifi': '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.05 9.14a16 16 0 0 1 21.9 0"/><path d="M9 16.18a5.5 5.5 0 0 1 6.04 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>',
+                'WifiOff': '<line x1="2" y1="2" x2="22" y2="22"/><path d="M8.5 12.55a11 11 0 0 1 11.08 0"/><path d="M12.5 16.18a5.5 5.5 0 0 1-2.92 0"/><path d="M2.05 9.14a16 16 0 0 1 3.4-1.63"/><path d="M16.96 11.5c1.32-.4 2.58-.9 3.8-1.57"/>',
+                'Loader': '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
+                'Play': '<polygon points="5 3 19 12 5 21 5 3"/>',
+                'Video': '<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="4" width="14" height="16" rx="2"/>',
+                'AlertTriangle': '<path d="M10.29 3.86L2.94 18.23a2 2 0 0 0 1.71 2.77h14.7a2 2 0 0 0 1.71-2.77L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+                'ArrowLeft': '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'
+            };
+            return `<svg class="w-5 h-5 ${classes}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[name] || ''}</svg>`;
+        };
+        
+        // --- Video URL Conversion Failsafe ---
+        const getEmbedUrl = (url) => {
+            if (url.includes('youtu.be/')) {
+                const idMatch = url.match(/youtu\.be\/([a-zA-Z0-Z0-9_-]+)/);
+                if (idMatch && idMatch[1]) {
+                    // Use standard YouTube embed format
+                    return `https://www.youtube.com/embed/${idMatch[1]}?rel=0`;
+                }
+            }
+            return url;
+        };
+
+        // --- Core UI Rendering (Simple Vertical Flow) ---
+
+        const renderApp = () => {
+            const container = document.getElementById('app-container');
+            if (!container) return;
+
+            // Determine status bar colors and icons
+            const iconName = isOffline ? 'WifiOff' : 'Wifi';
+            const topicTitle = appData ? appData.topicTitle : 'KAVACH';
+            
+            let contentHtml = '';
+
+            if (currentStatus.includes('Loading')) {
+                contentHtml = `
+                    <div class="flex justify-center items-center h-48 bg-white rounded-xl shadow-md mt-6">
+                        ${getIcon('Loader', 'w-8 h-8 animate-spin text-primary mr-3')}
+                        <span class="text-lg text-gray-600">Loading content...</span>
+                    </div>
+                `;
+            } else if (appData && appData.sections) {
+                // RESTORED SIMPLE VERTICAL FLOW: Renders all sections vertically
+                contentHtml = `
+                    <div class="video-player-and-controls">
+                        ${renderVideoPlayer()}
+                        ${renderVideoDetails()}
+                        ${renderModuleNavigation(appData.sections)}
+                    </div>
+                `;
+            } else {
+                contentHtml = `
+                    <div class="p-8 text-center bg-red-50 rounded-xl border border-red-300 mt-6">
+                        ${getIcon('AlertTriangle', 'w-8 h-8 text-red-600 mx-auto mb-3')}
+                        <p class="text-xl text-red-800">Critical Error: Content Unavailable</p>
+                        <p class="text-red-600">The embedded application data is missing or corrupted.</p>
+                    </div>
+                `;
+            }
+
+
+            let headerHtml = `
+                <header class="bg-primary text-white p-6 rounded-t-2xl shadow-xl">
+                    <div class="flex justify-between items-center w-full">
+                        <div class="flex items-center">
+                            
+                            <div>
+                                <h1 class="text-3xl font-bold">${topicTitle}</h1>
+                                <p class="text-indigo-200 mt-1">Learning Video</p>
+                            </div>
+                        </div>
+                        
+                        <!-- FINAL IMAGE: Using Inline Styles for GUARANTEED SIZE -->
+                        <img src="${KAVACH_IMAGE_URL}" 
+                            style="height: 56px; width: 56px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);" 
+                            alt="KAVACH Logo Icon"
+                            onerror="this.onerror=null; this.src='https://placehold.co/56x56/4F46E5/ffffff?text=K'">
+                    </div>
+                </header>
+                
+                <!-- Enhanced Status Bar -->
+                <div class="p-3 shadow-lg mb-6 flex justify-between items-center bg-white rounded-b-lg">
+                    <div class="flex items-center space-x-2">
+                        <!-- Status DOT (Green/Red) -->
+                        <div class="w-3 h-3 rounded-full ${isOffline ? 'bg-red-500' : 'bg-green-500'}"></div>
+                        <!-- Status Text -->
+                        <span id="status-text" class="text-sm font-medium ${isOffline ? 'text-red-800' : 'text-green-800'}">
+                            ${currentStatus.split(' (')[0]}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3 text-sm text-gray-600">
+                        <!-- Wifi Icon -->
+                        ${getIcon(iconName, `w-5 h-5 ${isOffline ? 'text-red-500' : 'text-green-500'}`)}
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = headerHtml + contentHtml;
+            attachEventListeners();
+        };
+
+        // --- Video Player Rendering (Using reliable YouTube iFrame) ---
+
+        const renderVideoPlayer = () => {
+            
+            // Failsafe: Ensure the URL is in the correct embed format before rendering
+            const safeUrl = getEmbedUrl(currentVideoUrl);
+
+            const videoElement = isOffline ? `
+                <div class="absolute inset-0 flex items-center justify-center text-center text-white/50">
+                    ${getIcon('WifiOff', 'w-10 h-10 mb-3')}
+                    <p class="text-lg">Video streaming blocked in offline mode. Please connect to the internet.</p>
+                </div>
+            ` : `
+                <iframe
+                    src="${safeUrl}"
+                    width="100%"
+                    height="100%"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen
+                    frameborder="0"
+                    loading="lazy"
+                    class="video-iframe"
+                ></iframe>
+            `;
+
+            return `
+                <div class="video-player-container">
+                    <div class="aspect-video w-full relative">
+                        ${videoElement}
+                    </div>
+                </div>
+            `;
+        };
+        
+        // --- Video Details and Controls Rendering ---
+
+        const renderVideoDetails = () => {
+            const qualityButtons = ['1080p', '720p', '360p'].map(q => `
+                <button onclick="window.setVideoQuality('${q}')"
+                    class="px-4 py-1 text-sm font-semibold rounded-full transition-all 
+                        ${currentVideo.quality === q ? 'bg-indigo-700 text-white shadow-lg' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}
+                    "
+                >
+                    ${q}
+                </button>
+            `).join('');
+            
+            const simpleVideoTitle = currentVideoTitle.split(':')[0].trim();
+
+            return `
+                <div class="p-4 bg-white rounded-xl shadow-lg mt-4">
+                    <h2 class="text-2xl font-bold text-gray-800">${simpleVideoTitle}</h2>
+                    <p class="text-sm text-primary font-semibold mb-3">${currentModuleTitle}</p>
+                    
+                    <div class="flex flex-wrap items-center justify-between bg-gray-800 p-3 rounded-xl shadow-inner mt-2">
+                        <span class="font-medium text-gray-200 mb-2 sm:mb-0 w-full sm:w-auto text-sm sm:text-base">
+                            Simulated Quality Control:
+                        </span>
+                        <div class="flex space-x-2">
+                            ${qualityButtons}
+                        </div>
+                        <span class="w-full text-xs text-indigo-400 mt-2">
+                            Current stream simulated at: ${currentVideo.quality}. (Player uses external streaming service).
+                        </span>
+                    </div>
+                </div>
+            `;
+        };
+
+        // --- Module Navigation Rendering ---
+        
+        const renderModuleNavigation = (sections) => {
+            const moduleCards = sections.map((module, index) => {
+                const moduleNumber = index + 1;
+                const video = module.videos[0]; 
+                
+                const displayTitle = `Module ${moduleNumber}`;
+                const isActive = currentModuleTitle.includes(displayTitle);
+
+                // Determine if this is the placeholder for the missing link
+                const isPlaceholder = video.videoStreams[0].url === "https://youtu.be/yR7L8t_H2oQ";
+
+                return `
+                    <div onclick="${isPlaceholder ? `window.renderMessageBox('Link Missing', 'The video for this module is not yet available.', 'warning')` : `window.playModule('${displayTitle}', '${video.title}', '${video.videoStreams[0].url}', '${video.videoStreams[0].quality}', '${video.description}')`}"
+                        class="module-card transition-all hover:bg-indigo-50/50 ${isActive ? 'active' : ''} ${isPlaceholder ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}"
+                        title="${isPlaceholder ? 'Video link unavailable' : video.title}"
+                    >
+                        <span class="text-xl font-bold text-primary">${displayTitle}</span>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-3">KAVACH Modules (7 Total)</h3>
+                <div class="module-list-container">
+                    ${moduleCards}
+                </div>
+            `;
+        };
+
+
+        // --- Global Actions ---
+
+        window.playModule = (moduleTitle, videoTitle, videoUrl, quality = '720p', description = '') => {
+            currentVideoUrl = videoUrl;
+            currentVideoTitle = videoTitle;
+            currentModuleTitle = moduleTitle;
+            currentVideo = { title: videoTitle, url: videoUrl, quality: quality };
+            
+            renderApp();
+        };
+
+        window.setVideoQuality = (quality) => {
+            if (!currentVideo) return;
+            currentVideo.quality = quality;
+            renderApp();
+        };
+
+        window.renderMessageBox = (title, message, type) => {
+            const color = type === 'warning' ? 'bg-yellow-500' : 'bg-primary';
+            const icon = type === 'warning' ? 'AlertTriangle' : 'CheckCircle';
+
+            const modalHtml = `
+                <div id="msg-box" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-[60] flex items-center justify-center p-4">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
+                        <div class="p-4 ${color} text-white flex items-center">
+                            ${getIcon(icon, 'w-6 h-6 mr-2')}
+                            <h3 class="text-lg font-bold">${title}</h3>
+                        </div>
+                        <div class="p-4 text-gray-700">
+                            <p class="mb-4">${message}</p>
+                            <button onclick="document.getElementById('msg-box').remove()"
+                                class="w-full py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition-all"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        };
+        
+        const attachEventListeners = () => {
+            // Event listeners removed for clean UI.
+        };
+
+        // --- Data Loading and Caching Logic ---
+
+        const loadContentLogic = async () => {
+            currentStatus = 'Loading... Parsing embedded content...';
+            renderApp();
+
+            await new Promise(resolve => setTimeout(resolve, MOCK_FETCH_DELAY)); 
+
+            let dataToLoad = null;
+
+            if (navigator.onLine) {
+                dataToLoad = EMBEDDED_KAVACH_DATA;
+                localStorage.setItem(CACHE_KEY, JSON.stringify(dataToLoad));
+                currentStatus = 'Loaded latest content'; // Shortened status
+                isOffline = false;
+            } else {
+                const cachedData = localStorage.getItem(CACHE_KEY);
+                if (cachedData) {
+                    dataToLoad = JSON.parse(cachedData);
+                    currentStatus = 'Loaded from cache'; // Shortened status
+                } else {
+                    dataToLoad = EMBEDDED_KAVACH_DATA;
+                    currentStatus = 'No cache, using default content'; // Shortened status
+                }
+                isOffline = true;
+            }
+            
+            appData = dataToLoad;
+
+            // Set the first video as the default player content on load
+            if (appData && appData.sections && appData.sections.length > 0 && appData.sections[0].videos.length > 0) {
+                 const firstModule = appData.sections[0];
+                 const firstVideo = firstModule.videos[0];
+                 window.playModule(`Module 1`, firstVideo.title, firstVideo.videoStreams[0].url, firstVideo.videoStreams[0].quality, firstVideo.description);
+            } else {
+                renderApp(); 
+            }
+        };
+
+        // --- Firebase Initialization (Standalone Compatible) ---
+
+        const initializeFirebase = async () => {
+            if (typeof __initial_auth_token !== 'undefined') {
+                 try {
+                     const { initializeApp: _initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
+                     const authModule = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
+                     const firestoreModule = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
+                     
+                     initializeApp = _initializeApp;
+                     ({ getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = authModule);
+                     ({ getFirestore, setLogLevel } = firestoreModule);
+
+                     setLogLevel('debug');
+
+                     app = initializeApp(firebaseConfig);
+                     auth = getAuth(app);
+                     db = getFirestore(app);
+
+                     onAuthStateChanged(auth, (user) => {
+                         if (user) { userId = user.uid; } else { userId = 'Anonymous (Canvas)'; }
+                         isAuthReady = true;
+                         loadContentLogic();
+                     });
+                     
+                     if (initialAuthToken) {
+                         await signInWithCustomToken(auth, initialAuthToken);
+                     } else {
+                         await signInAnonymously(auth);
+                     }
+                     return; 
+                 } catch (e) {
+                     console.warn("Could not load Firebase SDKs. Running in standalone mode.", e);
+                     userId = 'Anonymous (Standalone)';
+                 }
+            }
+            
+            // Standalone Execution Fallback
+            isAuthReady = true;
+            loadContentLogic();
+        };
+
+        window.onload = initializeFirebase;
+    </script>
+</body>
+</html>
+
