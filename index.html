@@ -2,568 +2,575 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAVACH: Video-Centric Learning</title>
-    
-    <!-- EMBEDDED TAILWIND CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>KAVACH Training Portal - IR Safety</title>
+
+    <!-- Standard Favicon -->
+    <link rel="icon" type="image/png" href="192x192.png">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#166534">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Kavach Trg">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            200: '#bbf7d0',
+                            300: '#86efac',
+                            400: '#4ade80',
+                            500: '#22c55e',
+                            600: '#16a34a', 
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        },
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        serif: ['Merriweather', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        /* Base styles */
-        :root {
-            --primary: #4F46E5; /* Indigo-600 */
-            --secondary-bg: #e0e7ff; /* Indigo-100 */
-            --video-bg: #111827; /* Dark Grey/Black */
-        }
-        .font-sans { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-        .min-h-screen { min-height: 100vh; }
-        .bg-gray-50 { background-color: #f9fafb; }
-        .max-w-7xl { max-width: 80rem; }
-        .mx-auto { margin-left: auto; margin-right: auto; }
-        
-        /* Layout & Spacing */
-        .p-4 { padding: 1rem; }
-        .sm\:p-8 { padding: 2rem; }
-        .flex { display: flex; }
-        .flex-col { flex-direction: column; }
-        .items-center { align-items: center; }
-        .justify-center { justify-center; center; }
-        .justify-between { justify-content: space-between; }
-        .w-full { width: 100%; }
-        .aspect-video { aspect-ratio: 16 / 9; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:wght@300;400;700&display=swap');
 
-        /* Colors and Components */
-        .bg-primary { background-color: var(--primary); }
-        .text-white { color: #fff; }
-        .p-6 { padding: 1.5rem; }
-        .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-        .rounded-lg { border-radius: 0.5rem; }
-        .rounded-t-2xl { border-top-left-radius: 1rem; border-top-right-radius: 1rem; }
-        .rounded-xl { border-radius: 0.75rem; }
-        .text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
-        .font-bold { font-weight: 700; }
-        .text-indigo-200 { color: #c7d2fe; }
-        .mt-1 { margin-top: 0.25rem; }
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* Video Player Area */
-        .video-player-container { background-color: var(--video-bg); padding: 0.5rem; border-radius: 1rem; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
-        .video-iframe { border-radius: 0.5rem; }
-        .video-overlay { z-index: 10; cursor: pointer; }
-        .relative { position: relative; }
-        .absolute { position: absolute; }
-        .inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
-        .transition-all { transition: all 0.3s ease-in-out; }
+        .sidebar-scrollbar::-webkit-scrollbar { width: 4px; }
+        .sidebar-scrollbar::-webkit-scrollbar-track { background: #111827; }
+        .sidebar-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 2px; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
         
-        /* Module List Styling */
-        .module-list-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr); 
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-        }
-        @media (min-width: 640px) { 
-            .module-list-container {
-                grid-template-columns: repeat(4, 1fr); 
-            }
-        }
-        @media (min-width: 1024px) { 
-            .module-list-container {
-                grid-template-columns: repeat(7, 1fr); 
-            }
-        }
-        
-        .module-card {
-            background-color: white;
-            padding: 1rem;
-            border-radius: 0.75rem;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-            text-align: center;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .module-card:hover {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .module-card.active {
-            border-color: var(--primary);
-            background-color: var(--secondary-bg);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.3);
-            transform: scale(1.03);
-        }
-        
-        /* Cleaned AI Result Styling */
-        .ai-result { display: none; }
+        .animate-spin-slow { animation: spin 3s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="font-sans bg-gray-50 min-h-screen">
+<body class="bg-gray-50 text-gray-900 font-sans h-screen overflow-hidden selection:bg-brand-100 selection:text-brand-900">
 
-    <div id="app-container" class="max-w-7xl mx-auto p-4 sm:p-8">
-        <!-- Content will be injected here by JavaScript -->
-    </div>
+    <div id="root"></div>
 
-    <script type="module">
-        // --- Firebase SDK Imports (For Canvas Environment only) ---
-        let initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, setLogLevel;
+    <script type="text/babel">
+        // --- DATA ---
+        const KAVACH_MODULES = [
+            {
+                id: 1,
+                title: "Introduction, History, and Features of Kavach (Version 4.0)",
+                duration: "21:59",
+                url: "https://youtu.be/L9SMgB5QNOs", 
+                description: `This module introduces Kavach as an indigenous Automatic Train Protection (ATP) system defined as a radio communication-based control system intended to enhance railway safety. It outlines the evolution from the earlier "Train Collision Avoidance System" (TCAS) to the current Version 4.0, highlighting its achievement of Safety Integrity Level 4 (SIL-4), the highest international safety standard. Key features include protection against Signal Passing at Danger (SPAD), prevention of head-on and rear-end collisions, continuous speed supervision, and assistance during adverse weather conditions like fog.`,
+                resources: [
+                    { title: "RDSO TCAS Specification V1.2", url: "https://www.google.com/search?q=RDSO+TCAS+Specification+SIL4+pdf" },
+                    { title: "Safety Case Report Summary", url: "https://www.google.com/search?q=Kavach+Safety+Case+Summary+IRICEN" }
+                ]
+            },
+            {
+                id: 2,
+                title: "Kavach System Architecture and Components",
+                duration: "19:44",
+                url: "https://youtu.be/JsokzsfFFmk",
+                description: `This module details the hardware required for the system, categorized into Station (Ground) Kavach and Loco Kavach components. Ground components include RFID tags installed on sleepers for location identification, the Stationary Kavach unit in the relay room, and radio towers at stations for communication. Loco components include the RFID reader, the Loco Kavach computer, the Brake Interface Unit (BIU) for applying emergency brakes, and the Driver Machine Interface (DMI), all of which communicate every two seconds to ensure connectivity.`,
+                resources: [
+                    { title: "DMI Operations Manual", url: "https://www.google.com/search?q=Kavach+DMI+User+Guide+pdf" }
+                ]
+            },
+            {
+                id: 3,
+                title: "Station Master Operation and SOS Protocols",
+                duration: "15:38",
+                url: "https://youtu.be/MDHElMgya4k",
+                description: `This section focuses on the Station Master Operation cum Indication Panel (SMOCIP) and the critical "Save Our Soul" (SOS) function. It explains how a Station Master or Loco Pilot can generate an SOS in the event of an accident or obstruction, which causes all trains within a 3000-meter radius to automatically apply emergency brakes. The module details that after acknowledging the alert and releasing brakes, the train is restricted to a speed of 30 km/h for 1500 meters.`,
+                resources: [
+                    { title: "RFID Tag Installation Checklist", url: "https://www.google.com/search?q=RDSO+Kavach+RFID+installation+manual" },
+                    { title: "Trackside Unit Maintenance Guide", url: "https://www.google.com/search?q=Kavach+Trackside+Maintenance+Protocol" }
+                ]
+            },
+            {
+                id: 4,
+                title: "Driver Machine Interface (DMI) and Operational Modes",
+                duration: "20:37",
+                url: "https://youtu.be/5882emtXmag",
+                description: `This module explains the Driver Machine Interface (DMI), where pilots view vital information such as signal aspects, location, and Movement Authority. It details various operational modes of the Loco Kavach, including Standby (SB), Staff Responsible (SR) for starting, and On Sight (OS) which activates automatically after passing two RFID tags. It also covers Full Supervision (FS), Limited Supervision (LS) during communication gaps, and Shunting (SH) mode, where speed is limited to 15 km/h.`,
+                resources: [
+                    { title: "UHF Frequency & Protocol Document", url: "https://www.google.com/search?q=Kavach+UHF+Communication+Standard" }
+                ]
+            },
+            {
+                id: 5,
+                title: "Trip and Post-Trip Modes",
+                duration: "5:20",
+                url: "https://youtu.be/9_rOF6GrQr8",
+                description: `This module covers the consequences of a train passing a stop signal at danger or exceeding its End of Authority, which causes the system to enter Trip Mode (TR) and apply emergency brakes. To recover from this state, the pilot must initiate Post Trip (PT) mode to release the brakes after receiving proper authority to proceed.`,
+                resources: [
+                    { title: "Braking Curve Calculation Logic", url: "https://www.google.com/search?q=TCAS+Dynamic+Braking+Curve+Algorithm" }
+                ]
+            },
+            {
+                id: 6,
+                title: "Procedure for Passing Defective Signals (Override Function)",
+                duration: "13:44",
+                url: "https://youtu.be/JuvA7ONSUvw",
+                description: `This module describes the Override (OVR) function used when a train needs to pass a defective signal at the "On" (danger) position. It outlines the strict conditions required: the pilot must have authority, the Movement Authority must be less than 200 meters, and the Override + Confirm buttons must be pressed simultaneously. Once activated, the signal aspect on the DMI turns blank, and the train must pass the signal within 240 seconds (4 minutes).`,
+                resources: [
+                    { title: "SPAD Event Analysis Guidelines", url: "https://www.google.com/search?q=Kavach+SPAD+Handling+Procedure" }
+                ]
+            },
+            {
+                id: 7,
+                title: "Amendments to General and Subsidiary Rules (GR & SR)",
+                duration: "13:09",
+                url: "https://youtu.be/k3CuRhH7Q-g",
+                description: `This module reviews specific corrections to railway General Rules (GR) to integrate Kavach, such as defining it under Rule 1.02. It mandates quarterly inspections by the Signal Sighting Committee and restricts trains to a maximum speed of 140 km/h if the Kavach system is defective. It also details the responsibilities of Station Masters (Rule 6.01) and Loco Pilots (Rule 6.07) regarding the generation of SOS messages during unusual circumstances or accidents.`,
+                resources: [
+                    { title: "KAVACH Fault Finding Manual", url: "https://www.google.com/search?q=Kavach+Troubleshooting+and+Maintenance+Guide" }
+                ]
+            }
+        ];
 
-        // --- GLOBAL FIREBASE/APP VARIABLES (Mandatory for Canvas Environment) ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        let app, db, auth;
-        let userId = 'Anonymous (Local)'; 
-        
-        // --- KAVACH Core Application Logic ---
-        
-        // GDrive Image URL (USING THE MOST RELIABLE THUMBNAIL LINK FORMAT)
-        const KAVACH_IMAGE_ID = '1KUsngQrr4UjB6uXFES6NVfpNS8jJdZdK';
-        const KAVACH_IMAGE_URL = `https://drive.google.com/thumbnail?id=${KAVACH_IMAGE_ID}&sz=s1000`; 
-
-        // EMBEDDED CONTENT: FINAL YOUTUBE LINKS
-        const EMBEDDED_KAVACH_DATA_RAW = 
-[
-{
-"topicTitle": "KAVACH",
-"sections": [
-{
-"sectionTitle": "Module 1",
-"videos": [
-{
-"title": "Video 1: Core Architecture Overview",
-"description": "This video explains the core offline-first strategy and components (VOLLEY, GSON).",
-"videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/L9SMgB5QNOs" } 
-]
-}
-]
-},
-{
-"sectionTitle": "Module 2",
-"videos": [
-{
-"title": "Video 2: Caching and Fallback Logic",
-"description": "This video details how the app saves data locally (caching) and ensures seamless offline function (fallback).",
-"videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/JsokzsfFFmk" }
-]
-}
-]
-},
-{
-"sectionTitle": "Module 3",
-"videos": [
-{
-"title": "Video 3: Structuring JSON Content",
-"description": "This video covers the data model (Topic, Module, Video) and how JSON is parsed into Kotlin objects.",
-"videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/MDHElMgya4k" }
-]
-}
-]
-},
-{
-"sectionTitle": "Module 4",
-"videos": [
-{
-"title": "Video 4: Implementing Expandable List",
-"description": "This video walks through the UI implementation of the collapsible list view (TopicAdapter.kt).",
-"videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/5882emtXmag" }
-]
-}
-]
-},
-{
-"sectionTitle": "Module 5",
-"videos": [
-{
-"title": "Video 5: Embedded Player Configuration",
-"description": "This video explains setting up and optimizing the EXOPLAYER component for video streaming.",
-"videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/9_rOF6GrQr8" }
-]
-}
-]
-},
-{
-"sectionTitle": "Module 6",
-"videos": [
-{
-"title": "Video 6: Manual Stream Switching",
-"description": "This video covers implementing the dedicated button/dialog for changing video quality (720p to 360p) for bandwidth control.",
-"videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/JuvA7ONSUvw" }
-]
-}
-]
-},
-{
-"sectionTitle": "Module 7",
-"videos": [
-{
-"title": "Video 7: Web vs. Native Deployment",
-"description": "A comparative overview of deploying the KAVACH architecture on web vs. native platforms.",
-"videoStreams": [
-{ "quality": "720p", "url": "https://youtu.be/k3CuRhH7Q-g" } // FINAL LINK
-]
-}
-]
-}
-]
-}
-];
-        
-        const EMBEDDED_KAVACH_DATA = EMBEDDED_KAVACH_DATA_RAW[0];
-
-        const CACHE_KEY = 'kavach_content_cache';
-        const MOCK_FETCH_DELAY = 100;
-        
-        let appData = null; 
-        let currentStatus = 'Initializing...';
-        let isOffline = false;
-        let isAuthReady = false;
-        
-        let currentVideo = null; 
-        let currentVideoTitle = "KAVACH - Loading...";
-        let currentVideoUrl = ""; 
-        let currentModuleTitle = "";
-        let currentVideoDescription = ""; 
-        
-        // --- Utility Functions ---
-        
-        const getIcon = (name, classes) => {
-            const icons = {
-                'Wifi': '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.05 9.14a16 16 0 0 1 21.9 0"/><path d="M9 16.18a5.5 5.5 0 0 1 6.04 0"/><line x1="12" y1="20" x2="12.01" y2="20"/>',
-                'WifiOff': '<line x1="2" y1="2" x2="22" y2="22"/><path d="M8.5 12.55a11 11 0 0 1 11.08 0"/><path d="M12.5 16.18a5.5 5.5 0 0 1-2.92 0"/><path d="M2.05 9.14a16 16 0 0 1 3.4-1.63"/><path d="M16.96 11.5c1.32-.4 2.58-.9 3.8-1.57"/>',
-                'Loader': '<path d="M21 12a9 9 0 1 1-6.219-8.56"/>',
-                'Play': '<polygon points="5 3 19 12 5 21 5 3"/>',
-                'Video': '<path d="m22 8-6 4 6 4V8Z"/><rect x="2" y="4" width="14" height="16" rx="2"/>',
-                'AlertTriangle': '<path d="M10.29 3.86L2.94 18.23a2 2 0 0 0 1.71 2.77h14.7a2 2 0 0 0 1.71-2.77L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-                'ArrowLeft': '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'
-            };
-            return `<svg class="w-5 h-5 ${classes}" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icons[name] || ''}</svg>`;
+        // --- ICONS (Native React SVG - No External Script Dependency) ---
+        const ICON_PATHS = {
+            'shield-check': "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z M9 12l2 2 4-4",
+            'play': "M5 3l14 9-14 9V3z",
+            'check': "M20 6L9 17l-5-5",
+            'clock': "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 6v6l4 2",
+            'menu': "M4 12h16 M4 6h16 M4 18h16",
+            'chevron-left': "M15 18l-6-6 6-6",
+            'chevron-right': "M9 18l6-6-6-6",
+            'circle': "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z",
+            'check-circle': "M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3",
+            'target': "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M12 2v2 M12 20v2 M4.93 4.93l1.41 1.41 M17.66 17.66l1.41 1.41 M2 12h2 M20 12h2 M6.34 17.66l-1.41 1.41 M19.07 4.93l-1.41 1.41",
+            'file-text': "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8",
+            'external-link': "M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6 M15 3h6v6 M10 14L21 3",
+            'pen-line': "M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
         };
-        
-        // --- Video URL Conversion Failsafe ---
-        const getEmbedUrl = (url) => {
-            if (url.includes('youtu.be/')) {
-                const idMatch = url.match(/youtu\.be\/([a-zA-Z0-Z0-9_-]+)/);
-                if (idMatch && idMatch[1]) {
-                    // Use standard YouTube embed format
-                    return `https://www.youtube.com/embed/${idMatch[1]}?rel=0`;
+
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const path = ICON_PATHS[name];
+            return (
+                <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width={size} 
+                    height={size} 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className={className}
+                >
+                    <path d={path} />
+                </svg>
+            );
+        };
+
+        // --- PERSISTENT STATE HOOK ---
+        const usePersistentState = (key, initialValue) => {
+            const [state, setState] = React.useState(() => {
+                try {
+                    const item = window.localStorage.getItem(key);
+                    return item ? JSON.parse(item) : initialValue;
+                } catch (error) {
+                    console.error("Error reading localStorage", error);
+                    return initialValue;
                 }
-            }
-            return url;
+            });
+
+            React.useEffect(() => {
+                try {
+                    window.localStorage.setItem(key, JSON.stringify(state));
+                } catch (error) {
+                    console.error("Error writing localStorage", error);
+                }
+            }, [key, state]);
+
+            return [state, setState];
         };
 
-        // --- Core UI Rendering (Simple Vertical Flow) ---
+        // --- COMPONENTS ---
 
-        const renderApp = () => {
-            const container = document.getElementById('app-container');
-            if (!container) return;
-
-            // Determine status bar colors and icons
-            const iconName = isOffline ? 'WifiOff' : 'Wifi';
-            const topicTitle = appData ? appData.topicTitle : 'KAVACH';
-            
-            let contentHtml = '';
-
-            if (currentStatus.includes('Loading')) {
-                contentHtml = `
-                    <div class="flex justify-center items-center h-48 bg-white rounded-xl shadow-md mt-6">
-                        ${getIcon('Loader', 'w-8 h-8 animate-spin text-primary mr-3')}
-                        <span class="text-lg text-gray-600">Loading content...</span>
+        const ProgressBar = ({ current, total, className = "" }) => {
+            const percentage = Math.round((current / total) * 100);
+            return (
+                <div className={`w-full ${className}`}>
+                    <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                        <span>Course Progress</span>
+                        <span>{percentage}%</span>
                     </div>
-                `;
-            } else if (appData && appData.sections) {
-                // RESTORED SIMPLE VERTICAL FLOW: Renders all sections vertically
-                contentHtml = `
-                    <div class="video-player-and-controls">
-                        ${renderVideoPlayer()}
-                        ${renderVideoDetails()}
-                        ${renderModuleNavigation(appData.sections)}
+                    <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
+                        <div 
+                            className="bg-brand-500 h-1.5 rounded-full transition-all duration-700 ease-out shadow-[0_0_10px_rgba(34,197,94,0.5)]" 
+                            style={{ width: `${percentage}%` }}
+                        ></div>
                     </div>
-                `;
-            } else {
-                contentHtml = `
-                    <div class="p-8 text-center bg-red-50 rounded-xl border border-red-300 mt-6">
-                        ${getIcon('AlertTriangle', 'w-8 h-8 text-red-600 mx-auto mb-3')}
-                        <p class="text-xl text-red-800">Critical Error: Content Unavailable</p>
-                        <p class="text-red-600">The embedded application data is missing or corrupted.</p>
-                    </div>
-                `;
-            }
+                </div>
+            );
+        };
 
+        const Sidebar = ({ modules, activeModuleId, onSelectModule, completedModules, isOpen, onClose }) => {
+            return (
+                <>
+                    {/* Mobile Overlay */}
+                    {isOpen && (
+                        <div className="fixed inset-0 bg-black/60 z-30 md:hidden backdrop-blur-sm" onClick={onClose}></div>
+                    )}
 
-            let headerHtml = `
-                <header class="bg-primary text-white p-6 rounded-t-2xl shadow-xl">
-                    <div class="flex justify-between items-center w-full">
-                        <div class="flex items-center">
-                            
-                            <div>
-                                <h1 class="text-3xl font-bold">${topicTitle}</h1>
-                                <p class="text-indigo-200 mt-1">Learning Video</p>
+                    {/* Sidebar Content */}
+                    <div className={`fixed inset-y-0 left-0 z-40 w-80 bg-gray-900 text-gray-300 transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 flex flex-col shadow-2xl border-r border-gray-800`}>
+                        
+                        {/* Header */}
+                        <div className="p-5 border-b border-gray-800 bg-gray-950">
+                            <div className="flex items-center space-x-3 mb-1">
+                                <div className="bg-brand-600 p-2 rounded-lg shadow-lg shadow-brand-900/40">
+                                    <Icon name="shield-check" className="text-white" size={24} />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-white tracking-tight leading-none">KAVACH</h1>
+                                    <p className="text-xs text-brand-400 font-medium tracking-wide">TRAINING PORTAL</p>
+                                </div>
                             </div>
                         </div>
+
+                        {/* Progress */}
+                        <div className="px-6 py-6 border-b border-gray-800 bg-gray-900">
+                            <ProgressBar current={completedModules.length} total={modules.length} />
+                        </div>
+
+                        {/* Module List */}
+                        <div className="flex-1 overflow-y-auto sidebar-scrollbar p-3 space-y-1">
+                            {modules.map((module, index) => {
+                                const isActive = module.id === activeModuleId;
+                                const isCompleted = completedModules.includes(module.id);
+
+                                return (
+                                    <button 
+                                        key={module.id}
+                                        onClick={() => { onSelectModule(module.id); onClose(); }}
+                                        className={`w-full text-left p-3 rounded-xl transition-all duration-200 group flex items-start space-x-3 relative overflow-hidden ${isActive ? 'bg-gray-800 ring-1 ring-brand-500/50 shadow-lg' : 'hover:bg-gray-800/50 hover:text-gray-100'}`}
+                                    >
+                                        {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-brand-500"></div>}
+                                        
+                                        <div className="mt-0.5 flex-shrink-0 relative z-10">
+                                            {isActive ? (
+                                                <div className="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/40">
+                                                    <Icon name="play" size={10} className="text-white fill-current ml-0.5" />
+                                                </div>
+                                            ) : isCompleted ? (
+                                                <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center border border-emerald-500/30">
+                                                    <Icon name="check" size={14} />
+                                                </div>
+                                            ) : (
+                                                <div className="w-6 h-6 rounded-full border border-gray-700 bg-gray-800 group-hover:border-gray-600 text-xs flex items-center justify-center text-gray-500 font-mono">
+                                                    {index + 1}
+                                                </div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="flex-1 min-w-0 relative z-10">
+                                            <p className={`text-sm font-medium leading-snug ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-200'}`}>
+                                                {module.title}
+                                            </p>
+                                            <div className="flex items-center mt-1.5 text-xs text-gray-600 space-x-3">
+                                                <span className="flex items-center"><Icon name="clock" size={10} className="mr-1" />{module.duration}</span>
+                                            </div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
                         
-                        <!-- FINAL IMAGE: Using Inline Styles for GUARANTEED SIZE -->
-                        <img src="${KAVACH_IMAGE_URL}" 
-                            style="height: 56px; width: 56px; border-radius: 50%; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);" 
-                            alt="KAVACH Logo Icon"
-                            onerror="this.onerror=null; this.src='https://placehold.co/56x56/4F46E5/ffffff?text=K'">
-                    </div>
-                </header>
-                
-                <!-- Enhanced Status Bar -->
-                <div class="p-3 shadow-lg mb-6 flex justify-between items-center bg-white rounded-b-lg">
-                    <div class="flex items-center space-x-2">
-                        <!-- Status DOT (Green/Red) -->
-                        <div class="w-3 h-3 rounded-full ${isOffline ? 'bg-red-500' : 'bg-green-500'}"></div>
-                        <!-- Status Text -->
-                        <span id="status-text" class="text-sm font-medium ${isOffline ? 'text-red-800' : 'text-green-800'}">
-                            ${currentStatus.split(' (')[0]}
-                        </span>
-                    </div>
-                    
-                    <div class="flex items-center space-x-3 text-sm text-gray-600">
-                        <!-- Wifi Icon -->
-                        ${getIcon(iconName, `w-5 h-5 ${isOffline ? 'text-red-500' : 'text-green-500'}`)}
-                    </div>
-                </div>
-            `;
-
-            container.innerHTML = headerHtml + contentHtml;
-            attachEventListeners();
-        };
-
-        // --- Video Player Rendering (Using reliable YouTube iFrame) ---
-
-        const renderVideoPlayer = () => {
-            
-            // Failsafe: Ensure the URL is in the correct embed format before rendering
-            const safeUrl = getEmbedUrl(currentVideoUrl);
-
-            const videoElement = isOffline ? `
-                <div class="absolute inset-0 flex items-center justify-center text-center text-white/50">
-                    ${getIcon('WifiOff', 'w-10 h-10 mb-3')}
-                    <p class="text-lg">Video streaming blocked in offline mode. Please connect to the internet.</p>
-                </div>
-            ` : `
-                <iframe
-                    src="${safeUrl}"
-                    width="100%"
-                    height="100%"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowfullscreen
-                    frameborder="0"
-                    loading="lazy"
-                    class="video-iframe"
-                ></iframe>
-            `;
-
-            return `
-                <div class="video-player-container">
-                    <div class="aspect-video w-full relative">
-                        ${videoElement}
-                    </div>
-                </div>
-            `;
-        };
-        
-        // --- Video Details and Controls Rendering ---
-
-        const renderVideoDetails = () => {
-            const qualityButtons = ['1080p', '720p', '360p'].map(q => `
-                <button onclick="window.setVideoQuality('${q}')"
-                    class="px-4 py-1 text-sm font-semibold rounded-full transition-all 
-                        ${currentVideo.quality === q ? 'bg-indigo-700 text-white shadow-lg' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}
-                    "
-                >
-                    ${q}
-                </button>
-            `).join('');
-            
-            const simpleVideoTitle = currentVideoTitle.split(':')[0].trim();
-
-            return `
-                <div class="p-4 bg-white rounded-xl shadow-lg mt-4">
-                    <h2 class="text-2xl font-bold text-gray-800">${simpleVideoTitle}</h2>
-                    <p class="text-sm text-primary font-semibold mb-3">${currentModuleTitle}</p>
-                    
-                    <div class="flex flex-wrap items-center justify-between bg-gray-800 p-3 rounded-xl shadow-inner mt-2">
-                        <span class="font-medium text-gray-200 mb-2 sm:mb-0 w-full sm:w-auto text-sm sm:text-base">
-                            Simulated Quality Control:
-                        </span>
-                        <div class="flex space-x-2">
-                            ${qualityButtons}
-                        </div>
-                        <span class="w-full text-xs text-indigo-400 mt-2">
-                            Current stream simulated at: ${currentVideo.quality}. (Player uses external streaming service).
-                        </span>
-                    </div>
-                </div>
-            `;
-        };
-
-        // --- Module Navigation Rendering ---
-        
-        const renderModuleNavigation = (sections) => {
-            const moduleCards = sections.map((module, index) => {
-                const moduleNumber = index + 1;
-                const video = module.videos[0]; 
-                
-                const displayTitle = `Module ${moduleNumber}`;
-                const isActive = currentModuleTitle.includes(displayTitle);
-
-                // Determine if this is the placeholder for the missing link
-                const isPlaceholder = video.videoStreams[0].url === "https://youtu.be/yR7L8t_H2oQ";
-
-                return `
-                    <div onclick="${isPlaceholder ? `window.renderMessageBox('Link Missing', 'The video for this module is not yet available.', 'warning')` : `window.playModule('${displayTitle}', '${video.title}', '${video.videoStreams[0].url}', '${video.videoStreams[0].quality}', '${video.description}')`}"
-                        class="module-card transition-all hover:bg-indigo-50/50 ${isActive ? 'active' : ''} ${isPlaceholder ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}"
-                        title="${isPlaceholder ? 'Video link unavailable' : video.title}"
-                    >
-                        <span class="text-xl font-bold text-primary">${displayTitle}</span>
-                    </div>
-                `;
-            }).join('');
-
-            return `
-                <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-3">KAVACH Modules (7 Total)</h3>
-                <div class="module-list-container">
-                    ${moduleCards}
-                </div>
-            `;
-        };
-
-
-        // --- Global Actions ---
-
-        window.playModule = (moduleTitle, videoTitle, videoUrl, quality = '720p', description = '') => {
-            currentVideoUrl = videoUrl;
-            currentVideoTitle = videoTitle;
-            currentModuleTitle = moduleTitle;
-            currentVideo = { title: videoTitle, url: videoUrl, quality: quality };
-            
-            renderApp();
-        };
-
-        window.setVideoQuality = (quality) => {
-            if (!currentVideo) return;
-            currentVideo.quality = quality;
-            renderApp();
-        };
-
-        window.renderMessageBox = (title, message, type) => {
-            const color = type === 'warning' ? 'bg-yellow-500' : 'bg-primary';
-            const icon = type === 'warning' ? 'AlertTriangle' : 'CheckCircle';
-
-            const modalHtml = `
-                <div id="msg-box" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-[60] flex items-center justify-center p-4">
-                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
-                        <div class="p-4 ${color} text-white flex items-center">
-                            ${getIcon(icon, 'w-6 h-6 mr-2')}
-                            <h3 class="text-lg font-bold">${title}</h3>
-                        </div>
-                        <div class="p-4 text-gray-700">
-                            <p class="mb-4">${message}</p>
-                            <button onclick="document.getElementById('msg-box').remove()"
-                                class="w-full py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium transition-all"
-                            >
-                                Close
-                            </button>
+                        <div className="p-4 border-t border-gray-800 text-xs text-gray-600 text-center">
+                            Unofficial Training Resource v2.1
                         </div>
                     </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
-        };
-        
-        const attachEventListeners = () => {
-            // Event listeners removed for clean UI.
+                </>
+            );
         };
 
-        // --- Data Loading and Caching Logic ---
+        const VideoContainer = ({ url }) => {
+            const [isLoading, setIsLoading] = React.useState(true);
 
-        const loadContentLogic = async () => {
-            currentStatus = 'Loading... Parsing embedded content...';
-            renderApp();
-
-            await new Promise(resolve => setTimeout(resolve, MOCK_FETCH_DELAY)); 
-
-            let dataToLoad = null;
-
-            if (navigator.onLine) {
-                dataToLoad = EMBEDDED_KAVACH_DATA;
-                localStorage.setItem(CACHE_KEY, JSON.stringify(dataToLoad));
-                currentStatus = 'Loaded latest content'; // Shortened status
-                isOffline = false;
-            } else {
-                const cachedData = localStorage.getItem(CACHE_KEY);
-                if (cachedData) {
-                    dataToLoad = JSON.parse(cachedData);
-                    currentStatus = 'Loaded from cache'; // Shortened status
-                } else {
-                    dataToLoad = EMBEDDED_KAVACH_DATA;
-                    currentStatus = 'No cache, using default content'; // Shortened status
+            // Robust function to get ID regardless of URL format
+            const getEmbedUrl = (rawUrl) => {
+                try {
+                    // Handle standard short links: https://youtu.be/ID
+                    if (rawUrl.includes('youtu.be/')) {
+                        const id = rawUrl.split('youtu.be/')[1].split('?')[0];
+                        return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+                    }
+                    // Handle browser links: https://youtube.com/watch?v=ID
+                    if (rawUrl.includes('youtube.com/watch')) {
+                        const urlObj = new URL(rawUrl);
+                        const id = urlObj.searchParams.get('v');
+                        if (id) {
+                            return `https://www.youtube.com/embed/${id}?autoplay=1&rel=0&modestbranding=1`;
+                        }
+                    }
+                    return rawUrl;
+                } catch (e) {
+                    console.error("URL parsing error", e);
+                    return rawUrl;
                 }
-                isOffline = true;
-            }
-            
-            appData = dataToLoad;
+            };
 
-            // Set the first video as the default player content on load
-            if (appData && appData.sections && appData.sections.length > 0 && appData.sections[0].videos.length > 0) {
-                 const firstModule = appData.sections[0];
-                 const firstVideo = firstModule.videos[0];
-                 window.playModule(`Module 1`, firstVideo.title, firstVideo.videoStreams[0].url, firstVideo.videoStreams[0].quality, firstVideo.description);
-            } else {
-                renderApp(); 
-            }
+            const embedUrl = getEmbedUrl(url);
+
+            return (
+                <div className="w-full bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-gray-900/5 aspect-video relative z-10 group">
+                    {/* Loading State Spinner */}
+                    {isLoading && (
+                        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-gray-900 text-gray-400">
+                            <div className="w-10 h-10 border-4 border-brand-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                            <span className="text-xs font-medium tracking-widest uppercase">Loading Module</span>
+                        </div>
+                    )}
+                    
+                    <iframe 
+                        src={embedUrl}
+                        className={`w-full h-full transition-opacity duration-500 ${isLoading ? 'opacity-0' : 'opacity-100'}`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        onLoad={() => setIsLoading(false)}
+                    ></iframe>
+                </div>
+            );
         };
 
-        // --- Firebase Initialization (Standalone Compatible) ---
+        // --- MAIN APP ---
+        const KavachTrainingApp = () => {
+            const [activeModuleId, setActiveModuleId] = React.useState(1);
+            const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+            const [activeTab, setActiveTab] = React.useState('overview');
+            const [completedModules, setCompletedModules] = usePersistentState('kavach_solo_progress', []);
+            const [allNotes, setAllNotes] = usePersistentState('kavach_solo_notes', {});
+            const [currentNote, setCurrentNote] = React.useState('');
 
-        const initializeFirebase = async () => {
-            if (typeof __initial_auth_token !== 'undefined') {
-                 try {
-                     const { initializeApp: _initializeApp } = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js");
-                     const authModule = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js");
-                     const firestoreModule = await import("https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js");
-                     
-                     initializeApp = _initializeApp;
-                     ({ getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = authModule);
-                     ({ getFirestore, setLogLevel } = firestoreModule);
+            const activeModule = KAVACH_MODULES.find(m => m.id === activeModuleId);
 
-                     setLogLevel('debug');
+            React.useEffect(() => {
+                setCurrentNote(allNotes[activeModuleId] || '');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, [activeModuleId]);
 
-                     app = initializeApp(firebaseConfig);
-                     auth = getAuth(app);
-                     db = getFirestore(app);
+            const handleNoteChange = (e) => {
+                const newText = e.target.value;
+                setCurrentNote(newText);
+                setAllNotes(prev => ({ ...prev, [activeModuleId]: newText }));
+            };
 
-                     onAuthStateChanged(auth, (user) => {
-                         if (user) { userId = user.uid; } else { userId = 'Anonymous (Canvas)'; }
-                         isAuthReady = true;
-                         loadContentLogic();
-                     });
-                     
-                     if (initialAuthToken) {
-                         await signInWithCustomToken(auth, initialAuthToken);
-                     } else {
-                         await signInAnonymously(auth);
-                     }
-                     return; 
-                 } catch (e) {
-                     console.warn("Could not load Firebase SDKs. Running in standalone mode.", e);
-                     userId = 'Anonymous (Standalone)';
-                 }
-            }
-            
-            // Standalone Execution Fallback
-            isAuthReady = true;
-            loadContentLogic();
+            const toggleComplete = () => {
+                if (completedModules.includes(activeModuleId)) {
+                    setCompletedModules(prev => prev.filter(id => id !== activeModuleId));
+                } else {
+                    setCompletedModules(prev => [...prev, activeModuleId]);
+                }
+            };
+
+            const nextModule = () => {
+                const currentIndex = KAVACH_MODULES.findIndex(m => m.id === activeModuleId);
+                if (currentIndex < KAVACH_MODULES.length - 1) {
+                    if (!completedModules.includes(activeModuleId)) {
+                        setCompletedModules(prev => [...prev, activeModuleId]);
+                    }
+                    setActiveModuleId(KAVACH_MODULES[currentIndex + 1].id);
+                }
+            };
+
+            const prevModule = () => {
+                const currentIndex = KAVACH_MODULES.findIndex(m => m.id === activeModuleId);
+                if (currentIndex > 0) {
+                    setActiveModuleId(KAVACH_MODULES[currentIndex - 1].id);
+                }
+            };
+
+            return (
+                <div className="flex h-screen bg-white">
+                    <Sidebar 
+                        modules={KAVACH_MODULES}
+                        activeModuleId={activeModuleId}
+                        onSelectModule={setActiveModuleId}
+                        completedModules={completedModules}
+                        isOpen={isSidebarOpen}
+                        onClose={() => setIsSidebarOpen(false)}
+                    />
+
+                    {/* Main Content */}
+                    <main className="flex-1 flex flex-col h-full overflow-hidden relative w-full">
+                        
+                        {/* Mobile Header */}
+                        <div className="md:hidden bg-white border-b px-4 py-3 flex items-center justify-between sticky top-0 z-20 shadow-sm">
+                            <div className="flex items-center space-x-3">
+                                <button onClick={() => setIsSidebarOpen(true)} className="p-2 -ml-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                                    <Icon name="menu" size={20} />
+                                </button>
+                                <span className="font-bold text-gray-800 truncate max-w-[200px]">{activeModule.title}</span>
+                            </div>
+                            <div className="text-xs font-bold text-brand-600 border border-brand-200 bg-brand-50 px-2 py-1 rounded">Mod {activeModuleId}</div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-50">
+                            <div className="max-w-5xl mx-auto p-4 md:p-8 lg:p-12 pb-24">
+                                
+                                {/* Video Player with Key to force re-render */}
+                                <VideoContainer key={activeModule.id} url={activeModule.url} />
+
+                                <div className="mt-8">
+                                    {/* Title Section */}
+                                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+                                        <div>
+                                            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">{activeModule.title}</h1>
+                                            <div className="flex items-center mt-3 space-x-4 text-sm text-gray-500">
+                                                <span className="flex items-center"><Icon name="clock" size={16} className="mr-1.5" /> {activeModule.duration}</span>
+                                                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                <span>Module {activeModuleId} of {KAVACH_MODULES.length}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center space-x-3 shrink-0">
+                                            <button onClick={prevModule} disabled={activeModuleId === 1} className="p-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-white hover:border-gray-300 hover:shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all"><Icon name="chevron-left" size={20} /></button>
+                                            
+                                            <button 
+                                                onClick={toggleComplete} 
+                                                className={`flex items-center justify-center space-x-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 shadow-sm ${completedModules.includes(activeModuleId) ? 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200' : 'bg-white text-gray-700 ring-1 ring-gray-200 hover:ring-brand-500 hover:text-brand-600'}`}
+                                            >
+                                                <Icon name={completedModules.includes(activeModuleId) ? "check-circle" : "circle"} size={20} />
+                                                <span>{completedModules.includes(activeModuleId) ? "Completed" : "Mark Done"}</span>
+                                            </button>
+
+                                            <button onClick={nextModule} disabled={activeModuleId === KAVACH_MODULES.length} className="p-3 rounded-xl bg-gray-900 text-white hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all"><Icon name="chevron-right" size={20} /></button>
+                                        </div>
+                                    </div>
+
+                                    {/* Tab Navigation */}
+                                    <div className="border-b border-gray-200 mb-8">
+                                        <div className="flex space-x-8">
+                                            {['Overview', 'Resources', 'Notes'].map((tab) => (
+                                                <button 
+                                                    key={tab} 
+                                                    onClick={() => setActiveTab(tab.toLowerCase())} 
+                                                    className={`pb-4 text-sm font-semibold border-b-2 transition-all duration-200 ${activeTab === tab.toLowerCase() ? 'border-brand-600 text-brand-600' : 'border-transparent text-gray-500 hover:text-gray-900'}`}
+                                                >
+                                                    {tab}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Tab Content */}
+                                    <div className="animate-fade-in min-h-[300px]">
+                                        {activeTab === 'overview' && (
+                                            <div className="space-y-8">
+                                                <div className="prose prose-lg prose-gray max-w-none">
+                                                    <p className="text-gray-600 leading-relaxed font-serif text-lg">{activeModule.description}</p>
+                                                </div>
+                                                
+                                                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                                                    <h4 className="font-bold text-gray-900 mb-4 flex items-center">
+                                                        <div className="bg-brand-100 p-1.5 rounded-md mr-3 text-brand-700"><Icon name="target" size={18} /></div>
+                                                        Key Takeaways
+                                                    </h4>
+                                                    <ul className="space-y-3 text-gray-600">
+                                                        <li className="flex items-start">
+                                                            <Icon name="check" size={16} className="mt-1 mr-3 text-brand-500 shrink-0" />
+                                                            <span>Understand SIL-4 safety compliance standards.</span>
+                                                        </li>
+                                                        <li className="flex items-start">
+                                                            <Icon name="check" size={16} className="mt-1 mr-3 text-brand-500 shrink-0" />
+                                                            <span>Identify critical components in Locomotive and Station units.</span>
+                                                        </li>
+                                                        <li className="flex items-start">
+                                                            <Icon name="check" size={16} className="mt-1 mr-3 text-brand-500 shrink-0" />
+                                                            <span>Master the override protocols and emergency handling.</span>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {activeTab === 'resources' && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {activeModule.resources.map((res, idx) => (
+                                                    <a 
+                                                        key={idx} 
+                                                        href={res.url} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="group flex flex-col p-5 rounded-2xl border border-gray-200 bg-white hover:border-brand-300 hover:shadow-md transition-all cursor-pointer no-underline"
+                                                    >
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div className="p-3 bg-gray-50 rounded-xl group-hover:bg-brand-50 group-hover:text-brand-600 transition-colors">
+                                                                <Icon name="file-text" size={24} className="text-gray-400 group-hover:text-brand-600" />
+                                                            </div>
+                                                            <Icon name="external-link" size={18} className="text-gray-300 group-hover:text-brand-500" />
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="font-bold text-gray-900 group-hover:text-brand-700 transition-colors">{res.title}</h3>
+                                                            <p className="text-sm text-gray-500 mt-1">Official Documentation / Reference</p>
+                                                        </div>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {activeTab === 'notes' && (
+                                            <div className="bg-white p-1 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+                                                <div className="border-b border-gray-100 bg-gray-50/50 p-4 flex items-center justify-between">
+                                                    <h3 className="text-sm font-bold text-gray-700 flex items-center">
+                                                        <Icon name="pen-line" size={16} className="mr-2 text-brand-600" /> 
+                                                        My Notes
+                                                    </h3>
+                                                    <span className="text-[10px] uppercase tracking-wider font-bold text-brand-600 bg-brand-50 px-2 py-1 rounded">Auto-Saved</span>
+                                                </div>
+                                                <textarea 
+                                                    className="w-full h-80 p-6 focus:outline-none text-gray-700 leading-relaxed resize-none"
+                                                    placeholder="Start typing your observations..."
+                                                    value={currentNote}
+                                                    onChange={handleNoteChange}
+                                                ></textarea>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+                </div>
+            );
         };
 
-        window.onload = initializeFirebase;
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<KavachTrainingApp />);
     </script>
 </body>
 </html>
+
 
